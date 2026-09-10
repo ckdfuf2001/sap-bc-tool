@@ -152,9 +152,9 @@ flowchart LR
 
 ## HTML 산출물 (분석 완료 시 필수, 2종)
 
-1. **건별 단일 HTML** `docs/analysis/<SYSTEM>_<TCODE>.html` — MD와 동일 내용의 오프라인 단일 파일.
-   CSS 박스+화살표로 2.5장 연계도를 재현하고, 기능 카탈로그·인자표·원천 근거를 모두 포함한다.
-   외부 JS/CDN/이미지 의존 금지.
+1. **건별 단일 HTML** `docs/analysis/<SYSTEM>_<TCODE>.html` — MD 전체 섹션(1~9장)과 완전히 동일한 내용.
+   요약·축소 금지. 2.5장 mermaid는 CSS 박스+화살표 레인으로 렌더링한다 (mermaid.js CDN 금지 — 오프라인 단일 파일 원칙).
+   수동 작성이 아니라 `python tools/build_html.py docs/analysis`로 MD에서 생성한다.
 2. **인덱스 HTML** `docs/analysis/index.html` — `docs/analysis/*.md` 전체 목록(시스템/티코드/내역/프로그램/일자 + MD·HTML 링크).
    분석을 추가·갱신할 때마다 인덱스를 재생성한다 (수동 편집이 아니라 디렉토리 스캔 기준으로 다시 쓴다).
 3. **상대경로 원칙 (필수)**: index/건별 HTML의 모든 링크·참조는 `./파일명` 형태의 상대경로만 사용.

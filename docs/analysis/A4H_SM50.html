@@ -2,38 +2,79 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>SM50 분석 (A4H) — Work Processes</title>
+<title>SM50 분석 (A4H)</title>
 <style>
 body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:24px;color:#222}
 h1{border-bottom:3px solid #0a6ebd;padding-bottom:8px}
 h2{margin-top:36px;border-left:6px solid #0a6ebd;padding-left:10px}
+h3{margin-top:24px;color:#0a6ebd}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}
 th{background:#eaf3fb}
 code{background:#f4f4f4;padding:1px 4px;font-size:13px}
+pre{background:#f4f4f4;padding:12px;overflow-x:auto;font-size:13px}
+pre code{background:none;padding:0}
 .meta{background:#f7f9fc;border:1px solid #ddd;padding:12px 16px}
-.diagram{background:#fafafa;border:1px solid #ccc;padding:18px;overflow-x:auto}
-.flow{display:flex;align-items:stretch;min-width:700px}
-.node{border:2px solid #0a6ebd;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;min-width:130px;max-width:200px}
+.diagram{background:#fafafa;border:1px solid #ccc;padding:18px;overflow-x:auto;margin:12px 0}
+.lane{margin:14px 0}
+.lane-title{font-weight:bold;margin-bottom:6px;color:#0a6ebd}
+.flow{display:flex;align-items:stretch;min-width:900px}
+.node{border:2px solid #0a6ebd;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;min-width:120px;max-width:200px}
 .node small{color:#555}
-.node.fm{border-color:#2e7d32}.node.screen{border-color:#7b1fa2}
-.arrow{align-self:center;font-size:20px;color:#666;padding:0 6px}
+.node.screen{border-color:#7b1fa2}
+.node.fm{border-color:#2e7d32}
+.node.tbl{border-color:#e65100}
+.node.bapi{border-color:#00695c;background:#e0f2f1}
+.node.dim{border-color:#999;border-style:dashed;color:#555}
+.arrow{align-self:center;font-size:20px;color:#666;padding:0 6px;white-space:nowrap}
 footer{margin-top:40px;font-size:12px;color:#777;border-top:1px solid #ccc;padding-top:8px}
+a{color:#0a6ebd}
 </style>
 </head>
 <body>
-<h1>SM50 분석 (A4H) <small>— Work Processes of AS Instance</small></h1>
-<div class="meta">분석일: 2026-09-09 · 시스템: A4H · 프로그램 RSMON000_ALV_NEW (S_ADMI_FCD 실측) · RFC 경로 TH_WPINFO (R)</div>
+<h1>SM50 분석 (A4H)</h1>
+<ul>
+<li>분석일: 2026-09-09, 대상 시스템: A4H (localhost trial, 001/DEVELOPER)</li>
+<li>티코드: SM50 (Work Processes of AS Instance, <code>TSTCT</code> E 실측)</li>
+<li>프로그램: RSMON000_ALV_NEW / DYPNO 1000 (TSTC 실측, 280KB. <code>AUTHORITY_CHECK_TCODE</code> + AUTH <code>S_ADMI_FCD</code> 원문 실측)</li>
+<li>탐색 방식: erpl-adt CLI (= MCP adt_* 대응)</li>
+</ul>
+<h2>1. 실행 경로 요약 (5줄 이내)</h2>
+<ol>
+<li><code>RSMON000_ALV_NEW</code> (ALV 그리드 표시) — S_ADMI_FCD 권한 체크 실측.</li>
+<li>RFC 경로 <code>TH_WPINFO</code> (FMODE=R 실측). 시그니처 실측: IMP MAX_ELEMS/SRVNAME/WITH_CPU/WITH_MTX_INFO, TAB WPLIST.</li>
+<li>필요 권한: <code>S_ADMI_FCD</code> (실측), <code>S_RFC</code>.</li>
+</ol>
 <h2>2. 기능 카탈로그</h2>
-<table>
-<tr><th>ID</th><th>기능명</th><th>RFC</th><th>인자</th></tr>
-<tr><td>F01</td><td>워크 프로세스 목록</td><td>TH_WPINFO → WPLIST</td><td>WITH_CPU 선택</td></tr>
-</table>
+<table><tr><th>기능ID</th><th>기능명</th><th>원천</th><th>RFC 재현</th><th>비고</th></tr><tr><td>F01</td><td>워크 프로세스 목록</td><td>TH_WPINFO (R)</td><td>가능</td><td>WITH_CPU 선택</td></tr></table>
 <h2>2.5 화면요소-소스-펑션 연계도</h2>
-<div class="diagram"><div class="flow">
-<div class="node screen">Screen 1000<br><small>RSMON000_ALV_NEW (S_ADMI_FCD)</small></div><div class="arrow">→</div>
-<div class="node fm">TH_WPINFO (R)<br><small>→ TAB WPLIST</small></div>
-</div></div>
-<footer>대응 MD: A4H_SM50.md · sap-tcode-analyze</footer>
+<div class="diagram"><div class="lane"><div class="flow"><div class="node screen">Screen 1000<br/>RSMON000_ALV_NEW<br/>(S_ADMI_FCD)</div><div class="arrow">&rarr;</div><div class="node src">RSMON000_ALV_NEW<br/>ALV 표시</div></div></div></div>
+<h2>3. 기능별 호출 인자</h2>
+<h3>F01 워크 프로세스 목록</h3>
+<ul>
+<li>선택: <code>WITH_CPU</code>(&#x27;X&#x27;)</li>
+<li>출력: <code>{&quot;wp&quot;: [...], &quot;count&quot;: n}</code> (WPLIST 행 원문)</li>
+</ul>
+<h2>4. 테이블 CRUD</h2>
+<table><tr><th>테이블</th><th>R/W</th><th>비고</th></tr><tr><td>(없음 — 메모리 상태 FM 경유)</td><td>—</td><td></td></tr></table>
+<h2>5. FM/BAPI 시그니처</h2>
+<table><tr><th>FM명</th><th>Remote?</th><th>요약</th><th>근거</th></tr><tr><td>TH_WPINFO</td><td>R</td><td>IMP 4종, TAB WPLIST</td><td>get_function_description 실측</td></tr></table>
+<h2>6. 권한 체크</h2>
+<ul>
+<li>실측: <code>AUTHORITY-CHECK OBJECT &#x27;S_ADMI_FCD&#x27;</code> (RSMON000_ALV_NEW 원문).</li>
+</ul>
+<h2>7. RFC-only 재현 전략</h2>
+<ul>
+<li>F01 직접 호출.</li>
+</ul>
+<h2>8. 원천 근거 로그</h2>
+<pre><code>rfc_read_table(conn,&quot;TSTC&quot;,[&quot;TCODE&quot;,&quot;PGMNA&quot;,&quot;DYPNO&quot;],where=&quot;TCODE = &#x27;SM50&#x27;&quot;)
+erpl-adt --insecure source read RSMON000_ALV_NEW --type PROG  # AUTHORITY_CHECK/S_ADMI_FCD 실측
+conn.get_function_description(&quot;TH_WPINFO&quot;)</code></pre>
+<h2>9. 미확인/주의사항</h2>
+<ul>
+<li>없음 (핵심 경로 전부 실측).</li>
+</ul>
+<footer>대응 MD와 동일 내용(전체 섹션) · sap-tcode-analyze · 상대경로·오프라인 단일 파일</footer>
 </body>
 </html>
