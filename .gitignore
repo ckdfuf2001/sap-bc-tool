@@ -1,0 +1,6 @@
+# 비밀번호 포함 접속정보 커밋 방지
+sap_systems.json
+# 접속 상태 기록(마지막 접속시간/결과) 커밋 방지
+sap_connection_state.json
+# erpl-adt 저장 자격증명 커밋 방지
+.adt.creds

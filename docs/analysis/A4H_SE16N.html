@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SE16N 분석 (A4H) — Table Display</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:24px;color:#222}
+h1{border-bottom:3px solid #0a6ebd;padding-bottom:8px}
+h2{margin-top:36px;border-left:6px solid #0a6ebd;padding-left:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eaf3fb}
+code{background:#f4f4f4;padding:1px 4px;font-size:13px}
+.meta{background:#f7f9fc;border:1px solid #ddd;padding:12px 16px}
+.diagram{background:#fafafa;border:1px solid #ccc;padding:18px;overflow-x:auto}
+.flow{display:flex;align-items:stretch;min-width:800px}
+.node{border:2px solid #0a6ebd;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;min-width:130px;max-width:200px}
+.node small{color:#555}
+.node.fm{border-color:#2e7d32}.node.tbl{border-color:#e65100}.node.dim{border-color:#999;border-style:dashed;color:#666}
+.arrow{align-self:center;font-size:20px;color:#666;padding:0 6px}
+footer{margin-top:40px;font-size:12px;color:#777;border-top:1px solid #ccc;padding-top:8px}
+</style>
+</head>
+<body>
+<h1>SE16N 분석 (A4H) <small>— Table Display</small></h1>
+<div class="meta">분석일: 2026-09-09 · 시스템: A4H · 티코드 SE16N은 <b>trial 미포함</b> (TSTC/TSTCP/ADT 모두 0건). 본 모듈은 SE16N equivalent.</div>
+<h2>2. 기능 카탈로그</h2>
+<table>
+<tr><th>ID</th><th>기능명</th><th>RFC</th><th>인자</th></tr>
+<tr><td>F01</td><td>테이블 내용 조회</td><td>RFC_READ_TABLE</td><td>TABLE 필수, FIELDS/WHERE/ROWCOUNT/ROWSKIPS 선택</td></tr>
+<tr><td>F02</td><td>테이블 구조 조회</td><td>DDIF_FIELDINFO_GET</td><td>TABLE 필수</td></tr>
+</table>
+<h2>2.5 화면요소-소스-펑션 연계도</h2>
+<div class="diagram"><div class="flow">
+<div class="node dim">SE16N 화면<br><small>trial 미포함</small></div><div class="arrow">→</div>
+<div class="node fm">RFC_READ_TABLE<br><small>R 실측</small></div><div class="arrow">→</div>
+<div class="node tbl">임의 테이블<br><small>TSTC 실측 OK</small></div><div class="arrow">→</div>
+<div class="node fm">DDIF_FIELDINFO_GET<br><small>DFIES_TAB</small></div>
+</div></div>
+<h2>7. 재현 전략 / 9. 미확인</h2>
+<p>F01/F02 직접 RFC. 필요 권한 S_TABU_NAM·S_RFC. SE16N 원천 프로그램은 정식 시스템에서 재확인 필요.</p>
+<footer>대응 MD: A4H_SE16N.md · sap-tcode-analyze</footer>
+</body>
+</html>

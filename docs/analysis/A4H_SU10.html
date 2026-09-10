@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SU10 분석 (A4H) — User Mass Maintenance</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:24px;color:#222}
+h1{border-bottom:3px solid #0a6ebd;padding-bottom:8px}
+h2{margin-top:36px;border-left:6px solid #0a6ebd;padding-left:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eaf3fb}
+code{background:#f4f4f4;padding:1px 4px;font-size:13px}
+.meta{background:#f7f9fc;border:1px solid #ddd;padding:12px 16px}
+.diagram{background:#fafafa;border:1px solid #ccc;padding:18px;overflow-x:auto}
+.flow{display:flex;align-items:stretch;min-width:850px}
+.node{border:2px solid #0a6ebd;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;min-width:130px;max-width:200px}
+.node small{color:#555}
+.node.fm{border-color:#2e7d32}.node.tbl{border-color:#e65100}.node.screen{border-color:#7b1fa2}
+.arrow{align-self:center;font-size:20px;color:#666;padding:0 6px}
+footer{margin-top:40px;font-size:12px;color:#777;border-top:1px solid #ccc;padding-top:8px}
+</style>
+</head>
+<body>
+<h1>SU10 분석 (A4H) <small>— User Mass Maintenance</small></h1>
+<div class="meta">분석일: 2026-09-09 · 시스템: A4H · 프로그램 SAPMSUU0M → SUID_IDENTITY_MAINT (I_TCODE_MODE=10, 원문 실측)</div>
+<h2>2. 기능 카탈로그</h2>
+<table>
+<tr><th>ID</th><th>기능명</th><th>RFC</th><th>인자</th></tr>
+<tr><td>F01</td><td>대량 생성</td><td>BAPI_USER_CREATE 반복</td><td>USERS 필수, COMMIT 선택</td></tr>
+<tr><td>F02</td><td>대량 변경</td><td>BAPI_USER_CHANGE 반복</td><td>USERS 필수</td></tr>
+<tr><td>F03</td><td>대량 삭제</td><td>BAPI_USER_DELETE 반복</td><td>USERS 필수, COMMIT 선택</td></tr>
+</table>
+<h2>2.5 화면요소-소스-펑션 연계도</h2>
+<div class="diagram"><div class="flow">
+<div class="node screen">Screen 1000<br><small>SAPMSUU0M</small></div><div class="arrow">→</div>
+<div class="node fm">SUID_IDENTITY_MAINT<br><small>I_TCODE_MODE=10</small></div><div class="arrow">→</div>
+<div class="node">sap_tcode_su01<br><small>f02/f03/f04 반복</small></div><div class="arrow">→</div>
+<div class="node tbl">USR02</div>
+</div></div>
+<footer>대응 MD: A4H_SU10.md · sap-tcode-analyze</footer>
+</body>
+</html>

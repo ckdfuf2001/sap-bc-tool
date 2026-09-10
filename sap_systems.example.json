@@ -1,0 +1,25 @@
+{
+  "_comment": "SAP 시스템별 접속정보. 이 파일을 복사해 sap_systems.json 으로 저장하고 실제 값을 입력하세요. 비밀번호는 평문 대신 ${SAP_PW_PRD} 처럼 환경변수 참조 권장.",
+  "systems": [
+    {
+      "name": "DEV",
+      "sid": "DED",
+      "ashost": "10.0.0.1",
+      "sysnr": "00",
+      "client": "100",
+      "user": "RFC_USER",
+      "passwd": "${SAP_PW_DEV}",
+      "lang": "KO"
+    },
+    {
+      "name": "PRD",
+      "sid": "PED",
+      "ashost": "10.0.0.2",
+      "sysnr": "00",
+      "client": "100",
+      "user": "RFC_USER",
+      "passwd": "${SAP_PW_PRD}",
+      "lang": "KO"
+    }
+  ]
+}

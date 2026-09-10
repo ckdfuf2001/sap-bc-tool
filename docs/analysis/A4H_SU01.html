@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SU01 분석 (A4H) — User Maintenance</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:24px;color:#222}
+h1{border-bottom:3px solid #0a6ebd;padding-bottom:8px}
+h2{margin-top:36px;border-left:6px solid #0a6ebd;padding-left:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eaf3fb}
+code{background:#f4f4f4;padding:1px 4px;font-size:13px}
+.meta{background:#f7f9fc;border:1px solid #ddd;padding:12px 16px}
+.diagram{background:#fafafa;border:1px solid #ccc;padding:18px;overflow-x:auto}
+.lane{margin:14px 0}
+.lane-title{font-weight:bold;margin-bottom:6px;color:#0a6ebd}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;min-width:900px}
+.node{border:2px solid #0a6ebd;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px;min-width:130px;max-width:190px}
+.node small{color:#555}
+.node.screen{border-color:#7b1fa2}
+.node.src{border-color:#0a6ebd}
+.node.fm{border-color:#2e7d32}
+.node.tbl{border-color:#e65100}
+.node.bapi{border-color:#00695c;background:#e0f2f1}
+.arrow{align-self:center;font-size:20px;color:#666;padding:0 6px;white-space:nowrap}
+.note{background:#fff8e1;border:1px solid #e0c36a;padding:8px 12px;font-size:13px;margin-top:10px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
+.r{background:#c8e6c9}.n{background:#eee}
+footer{margin-top:40px;font-size:12px;color:#777;border-top:1px solid #ccc;padding-top:8px}
+</style>
+</head>
+<body>
+<h1>SU01 분석 (A4H) <small>— User Maintenance</small></h1>
+<div class="meta">
+분석일: 2026-09-09 · 시스템: A4H (localhost trial, 001/DEVELOPER) · 티코드: SU01 (User Maintenance)<br>
+프로그램: SAPMSUU0 / 패키지 SUSR · 탐색: erpl-adt CLI (= MCP adt_* 대응, 본 환경 MCP 미장착으로 fallback)
+</div>
+
+<h2>1. 실행 경로 요약</h2>
+<ol>
+<li><code>SAPMSUU0</code> 실행 → <code>AUTHORITY_CHECK_TCODE('SU01')</code>, 실패 시 LEAVE PROGRAM</li>
+<li><code>CALL FUNCTION 'SUID_IDENTITY_MAINT'</code> (Remote-enabled 확인)</li>
+<li><code>lcl_maint_main</code> 객체 생성 → <code>gr_main-&gt;start()</code></li>
+<li>초기 화면(50/51) → 메인 정비 화면(100, 1050/1051/1100) + 탭(<code>LIF_MAINT_TAB</code>)</li>
+<li>저장 <code>do_save</code> → <code>SUID_IDENTITY_SAVE_TO_DB</code> → USR02 갱신. RFC 재현은 <code>BAPI_USER_*</code></li>
+</ol>
+
+<h2>2. 기능 카탈로그</h2>
+<table>
+<tr><th>ID</th><th>기능명</th><th>원천</th><th>RFC 재현</th><th>비고</th></tr>
+<tr><td>F01</td><td>사용자 단건 조회</td><td>SUID_IDENTITY_MAINT + BAPI_USER_GET_DETAIL</td><td>가능</td><td></td></tr>
+<tr><td>F02</td><td>사용자 생성</td><td>BAPI_USER_CREATE/CREATE1</td><td>가능 + COMMIT</td><td></td></tr>
+<tr><td>F03</td><td>사용자 변경</td><td>BAPI_USER_CHANGE</td><td>가능 + COMMIT</td><td>LOCK 선행 가능</td></tr>
+<tr><td>F04</td><td>사용자 삭제</td><td>BAPI_USER_DELETE</td><td>가능 + COMMIT</td><td></td></tr>
+<tr><td>F05</td><td>사용자 목록 조회</td><td>BAPI_USER_GETLIST</td><td>가능</td><td>SU10 대체</td></tr>
+<tr><td>F06</td><td>존재 여부 체크</td><td>BAPI_USER_EXISTENCE_CHECK</td><td>가능</td><td></td></tr>
+<tr><td>F07</td><td>롤/프로파일 할당·삭제</td><td>BAPI_USER_ACTGROUPS_*/PROFILES_*</td><td>가능 + COMMIT</td><td>탭 대응</td></tr>
+<tr><td>F08</td><td>초기 화면 스킵 진입</td><td>SUID_IDENTITY_MAINT(I_USERNAME)</td><td>조건부(BAPI 우회)</td><td>dynpro 미지원</td></tr>
+</table>
+
+<h2>2.5 화면요소-소스-펑션 연계도</h2>
+<div class="diagram">
+<div class="lane"><div class="lane-title">A. 실행 흐름 (화면 → 소스 → 펑션 → 테이블)</div>
+<div class="flow">
+<div class="node screen">Screen 1000<br><small>SAPMSUU0<br>TSTC-DYPNO 실측</small></div><div class="arrow">→</div>
+<div class="node src">SAPMSUU0 main<br><small>AUTHORITY_CHECK_TCODE('SU01')</small></div><div class="arrow">→</div>
+<div class="node fm">SUID_IDENTITY_MAINT <span class="tag r">R</span><br><small>Group SUID_MAINTENANCE<br>I_USERNAME / I_TCODE_MODE / I_SU01_DISPLAY</small></div><div class="arrow">→</div>
+<div class="node src">lcl_maint_main<br><small>gr_main-&gt;start()<br>(TOP 실측)</small></div>
+</div></div>
+<div class="lane"><div class="lane-title">B. 화면 분기</div>
+<div class="flow">
+<div class="node screen">Screen 50<br><small>I01/d050_pbo<br>v_update_view</small></div><div class="arrow">→</div>
+<div class="node screen">Screen 51<br><small>I02/d051<br>mass + F4_USERS</small></div><div class="arrow">→</div>
+<div class="node screen">Screen 100<br><small>I03/d100<br>메인 정비</small></div><div class="arrow">→</div>
+<div class="node screen">Screen 1050/51/1100<br><small>I04 + LIF_MAINT_TAB<br>탭스트립</small></div><div class="arrow">→</div>
+<div class="node src">do_save<br><small>lcl_maint_main</small></div><div class="arrow">→</div>
+<div class="node fm">SUID_IDENTITY_SAVE_TO_DB <span class="tag n">RFC×</span><br><small>FMODE blank</small></div><div class="arrow">→</div>
+<div class="node tbl">USR02<br><small>KEY MANDT+BNAME<br>실측</small></div>
+</div></div>
+<div class="lane"><div class="lane-title">C. RFC 우회 레인 (파이썬 구현 경로)</div>
+<div class="flow">
+<div class="node bapi">BAPI_USER_* 28건 <span class="tag r">R</span><br><small>GET_DETAIL/GETLIST<br>CREATE/CHANGE/DELETE<br>LOCK/UNLOCK …</small></div><div class="arrow">→</div>
+<div class="node tbl">USR02<br><small>직접 읽기 가능<br>(3건 샘플 실측)</small></div>
+</div></div>
+<div class="note">스크린 필드明細: D020S/D021S RFC 조회 불가(TABLE_WITHOUT_DATA) → 스크린 단위까지만 확정, 필드明细 미확인.</div>
+</div>
+
+<h2>3. 기능별 호출 인자 (요약)</h2>
+<table>
+<tr><th>ID</th><th>필수 인자</th><th>선택/출력</th></tr>
+<tr><td>F01</td><td><code>USERNAME CHAR12</code></td><td>출력: LOGONDATA/ADDRESS/PROFILES… + RETURN</td></tr>
+<tr><td>F02</td><td><code>USERNAME</code></td><td>선택: LOGONDATA, PASSWORD(BAPIPWD), ADDRESS… + COMMIT (쓰기 실측 완료)</td></tr>
+<tr><td>F03</td><td><code>USERNAME</code> + <code>*_X</code> 플래그 구조체</td><td>RETURN + COMMIT (LOCK 선행 가능)</td></tr>
+<tr><td>F04</td><td><code>USERNAME</code></td><td>RETURN + COMMIT</td></tr>
+<tr><td>F05</td><td>-</td><td>선택: SELECTION_RANGE / 출력: USERNAMES</td></tr>
+<tr><td>F06</td><td><code>USERNAME</code></td><td>출력: RETURN</td></tr>
+<tr><td>F07</td><td><code>USERNAME</code> + 테이블 파라미터</td><td>RETURN + COMMIT</td></tr>
+<tr><td>F08</td><td><code>I_USERNAME</code>(opt), <code>I_TCODE_MODE</code>(def 1), <code>I_SU01_DISPLAY</code>(opt)</td><td>FM 원문 실측 / BAPI 우회</td></tr>
+</table>
+
+<h2>4. 테이블 CRUD</h2>
+<table>
+<tr><th>테이블</th><th>R/W</th><th>핵심 필드</th><th>KEY/WHERE</th></tr>
+<tr><td>USR02</td><td>R/W</td><td>BNAME, UFLAG, USTYP, TRDAT</td><td>KEY MANDT+BNAME (KEYFLAG 실측)</td></tr>
+<tr><td>TSTC</td><td>R</td><td>TCODE, PGMNA</td><td>TCODE='SU01' → SAPMSUU0/1000</td></tr>
+<tr><td>TSTCT</td><td>R</td><td>TCODE, SPRSL, TTEXT</td><td>SU01/E=User Maintenance</td></tr>
+<tr><td>TFDIR</td><td>R</td><td>FUNCNAME, FMODE</td><td>BAPI_USER_* 28건 R</td></tr>
+</table>
+
+<h2>5. FM/BAPI (요약)</h2>
+<table>
+<tr><th>FM명</th><th>Group</th><th>Remote</th><th>요약</th></tr>
+<tr><td>AUTHORITY_CHECK_TCODE</td><td>basis</td><td>—</td><td>TCODE 권한 체크 (SAPMSUU0 원문)</td></tr>
+<tr><td>SUID_IDENTITY_MAINT</td><td>SUID_MAINTENANCE</td><td>R</td><td>SU01 진입점 (소스 원문 실측)</td></tr>
+<tr><td>BAPI_USER_GET_DETAIL/GETLIST</td><td>SU_USER</td><td>R</td><td>조회계</td></tr>
+<tr><td>BAPI_USER_CREATE/CREATE1/CHANGE/DELETE</td><td>SU_USER</td><td>R</td><td>변경계 (+COMMIT)</td></tr>
+<tr><td>BAPI_USER_LOCK/UNLOCK/EXISTENCE_CHECK</td><td>SU_USER</td><td>R</td><td>부가</td></tr>
+<tr><td>SUID_IDENTITY_SAVE_TO_DB</td><td>SUID_MAINTENANCE</td><td>×</td><td>내부 저장 (RFC 미지원)</td></tr>
+</table>
+
+<h2>6. 권한 체크</h2>
+<p>실측: <code>AUTHORITY_CHECK_TCODE('SU01')</code>. 세부 오브젝트는 <code>CL_SUID_TOOLS</code> 경유 추정이나 원문 미확인. BAPI 경로 필요 권한: <code>S_RFC</code>, <code>S_TABU_NAM</code>(직접 접근 시), <code>S_USER_GRP</code>(미확인 표기).</p>
+
+<h2>7. RFC-only 재현 전략</h2>
+<p>BAPI 우선 + <code>BAPI_TRANSACTION_COMMIT(WAIT=X)</code>/실패 시 ROLLBACK, RETURN 전건 검사. 대량은 <code>rfc_read_full</code>. 불가: 탭 dynpro 검증·F4·CUA 메뉴 (GUI 전용).</p>
+
+<h2>9. 미확인/주의사항</h2>
+<ul>
+<li>dynpro 필드明细 (D020S/D021S RFC 불가)</li>
+<li>세부 AUTHORITY-CHECK 오브젝트 (CL_SUID_TOOLS 경유 추정)</li>
+<li>BAPI 상세 구조는 표준 시그니처 기준 — 실호출 테스트는 tcode-to-python 단계에서 수행</li>
+</ul>
+<footer>대응 MD: A4H_SU01.md · 생성: sap-tcode-analyze · 접속: sap_systems.json(A4H)</footer>
+</body>
+</html>
