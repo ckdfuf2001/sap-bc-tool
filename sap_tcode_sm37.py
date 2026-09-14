@@ -4,10 +4,16 @@ RFC 경로: BAPI_XBP_JOB_SELECT (R 실측) + TBTCO 직접 조회 (DFIES 58필드
 
 외부 MCP 래핑용: from sap_tcode_sm37 import TOOLS, call_tool
 """
+import os
 from sap_monthly_report import (get_connection_by_name, rfc_read_table,
                                 rfc_read_full)
 
 SYSTEM = "A4H"
+
+def _default_system(explicit=None):
+    """접속 시스템 결정: 명시 인자 > $SAP_SYSTEM/$SAP_DEFAULT_SYSTEM > SYSTEM 상수."""
+    return explicit or os.environ.get("SAP_SYSTEM") or os.environ.get("SAP_DEFAULT_SYSTEM") or SYSTEM
+
 TCODE = "SM37"
 
 
@@ -80,9 +86,9 @@ def get_tool_defs():
     return [{k: v for k, v in t.items() if k != "func"} for t in TOOLS]
 
 
-def call_tool(name_or_id, conn_or_system=SYSTEM, **kwargs):
+def call_tool(name_or_id, conn_or_system=None, **kwargs):
     """외부 MCP 핸들러용 단일 진입점: tool명/F01 → 함수 디스패치."""
-    conn = conn_or_system if hasattr(conn_or_system, "call") else get_connection_by_name(conn_or_system)
+    conn = conn_or_system if hasattr(conn_or_system, "call") else get_connection_by_name(_default_system(conn_or_system))
     try:
         for t in TOOLS:
             if name_or_id in (t["id"], t["name"]):
@@ -100,7 +106,7 @@ if __name__ == "__main__":
     import sys
     import json
     # 사용법: python sap_tcode_sm37.py A4H F01 --params '{"max_rows": 10}'
-    system = sys.argv[1] if len(sys.argv) > 1 else SYSTEM
+    system = sys.argv[1] if len(sys.argv) > 1 else _default_system()
     tool = sys.argv[2] if len(sys.argv) > 2 else "F01"
     params = {}
     if "--params" in sys.argv:

@@ -8,9 +8,15 @@
     for t in TOOLS:
         mcp.add_tool(getattr(m, t["func"]), name=t["name"], description=t["description"])
 """
+import os
 from sap_monthly_report import get_connection_by_name
 
 SYSTEM = "A4H"  # find_system key (분석서 시스템과 동일)
+
+def _default_system(explicit=None):
+    """접속 시스템 결정: 명시 인자 > $SAP_SYSTEM/$SAP_DEFAULT_SYSTEM > SYSTEM 상수."""
+    return explicit or os.environ.get("SAP_SYSTEM") or os.environ.get("SAP_DEFAULT_SYSTEM") or SYSTEM
+
 TCODE = "SU01"
 
 
@@ -297,9 +303,9 @@ def get_tool_defs():
     return [{k: v for k, v in t.items() if k != "func"} for t in TOOLS]
 
 
-def call_tool(name_or_id, conn_or_system=SYSTEM, **kwargs):
+def call_tool(name_or_id, conn_or_system=None, **kwargs):
     """외부 MCP 핸들러용 단일 진입점: tool명/F01 → 함수 디스패치."""
-    conn = conn_or_system if hasattr(conn_or_system, "call") else get_connection_by_name(conn_or_system)
+    conn = conn_or_system if hasattr(conn_or_system, "call") else get_connection_by_name(_default_system(conn_or_system))
     try:
         for t in TOOLS:
             if name_or_id in (t["id"], t["name"]):
@@ -317,7 +323,7 @@ if __name__ == "__main__":
     import sys
     import json
     # 사용법: python sap_tcode_su01.py A4H F01 --params '{"username": "DEVELOPER"}'
-    system = sys.argv[1] if len(sys.argv) > 1 else SYSTEM
+    system = sys.argv[1] if len(sys.argv) > 1 else _default_system()
     tool = sys.argv[2] if len(sys.argv) > 2 else "F01"
     params = {}
     if "--params" in sys.argv:

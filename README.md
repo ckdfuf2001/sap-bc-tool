@@ -50,6 +50,18 @@ docker run --stop-timeout 3600 -d --name a4h -h vhcala4hci `
 참고: WSL 커널 파라미터(`kernel.shmmni=32768` 등)는 WSL 재시작 시 초기화되므로 기동 실패 시 재적용.
 trial 자체서명 인증서 때문에 erpl-adt 호출마다 `--insecure` 필요.
 
+## 다른 PC에서 쓰기 (접속정보만 채우기)
+
+이 레포에는 비밀번호·호스트·SID가 박혀 있지 않다. 아래 2개만 채우면 된다.
+
+1. `Copy-Item sap_systems.example.json sap_systems.json` 후 ashost/sysnr/client/user 입력.
+   비밀번호는 평문 대신 환경변수 참조: `"passwd": "${SAP_PW_A4H}"` + `$env:SAP_PW_A4H='...'`
+   (`sap_systems.json`은 gitignore라 커밋되지 않는다)
+2. (선택) 기본 시스템 변경: `$env:SAP_SYSTEM='PRD'` (없으면 각 모듈의 `SYSTEM` 기본값 사용).
+   직접 지정도 가능: `python sap_tcode_sm50.py PRD F01 --params '{}'`
+
+호출 3순위: 명시 인자(system/conn) > `$SAP_SYSTEM`/`$SAP_DEFAULT_SYSTEM` > 모듈 `SYSTEM` 상수.
+
 ## 사용법
 
 ```powershell

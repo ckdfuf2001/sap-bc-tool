@@ -4,3 +4,9 @@ sap_systems.json
 sap_connection_state.json
 # erpl-adt 저장 자격증명 커밋 방지
 .adt.creds
+# 로컬 env·로그·캐시 커밋 방지
+.env
+*.log
+__pycache__/
+smoke_*.json
+*_tmp.py
