@@ -117,10 +117,14 @@ if __name__ == "__main__":
 4. 읽기 함수 1건 스모크 테스트 (`ROWCOUNT=5`). 쓰기는 기본 dry-run, 실제 기표는 `--commit` 플래그 때만
 5. `get_tool_defs()` JSON 직렬화 가능 확인 + `call_tool` 디스패치 1건 테스트
 6. 실패 항목은 코드에 `NotImplementedError("다이얼로그 전용: ...")` + 분석서 9장(미확인)에 추가
+7. 공용 등록: `python tools/build_registry.py` 실행 → `.opencode/skills/sap-bc-usage/registry.json` 갱신 확인,
+   `sap-bc-usage` SKILL.md의 Module catalog + Function usage에 신규모듈 1행 이상 추가 (CLI 예 포함)
 
 ## Output
 
 - `<out>.py` 파일 1개 (TOOLS + get_tool_defs + call_tool 포함) + 사용법 (`python <out>.py <SYSTEM> <F01|함수명> --params '{...}'`)
+- `tools/build_registry.py` 실행으로 갱신된 `.opencode/skills/sap-bc-usage/registry.json` (커밋 포함)
+- `sap-bc-usage` SKILL.md 사용법 등록 (Module catalog + Function usage 행 추가)
 - 응답 마지막에: 기능ID→함수→인자 대응표 / 구현 범위 / 미지원 항목 / 필요 권한(`S_TABU_NAM`, `S_RFC`, `AUTHORITY-CHECK` 대상) / 테스트 결과
 
 ## Rules (엄수)
@@ -130,3 +134,4 @@ if __name__ == "__main__":
 - 비밀번호 평문 포함 금지 (`sap_systems.json` + `${ENV}` 사용)
 - 비밀번호 오류 반복 재시도 금지 (`get_connection_by_name`의 auth_failed 차단 존중)
 - 200줄 초과 시 함수별 분할 + `sap_monthly_report` 재사용으로 중복 제거
+- 신규모듈 생성 시 `sap-bc-usage` 등록 생략 금지 (registry.json 갱신 + SKILL.md 사용법 행 추가 없이 완료 처리 금지)
