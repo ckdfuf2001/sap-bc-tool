@@ -117,13 +117,14 @@ if __name__ == "__main__":
 4. 읽기 함수 1건 스모크 테스트 (`ROWCOUNT=5`). 쓰기는 기본 dry-run, 실제 기표는 `--commit` 플래그 때만
 5. `get_tool_defs()` JSON 직렬화 가능 확인 + `call_tool` 디스패치 1건 테스트
 6. 실패 항목은 코드에 `NotImplementedError("다이얼로그 전용: ...")` + 분석서 9장(미확인)에 추가
-7. 공용 등록: `python tools/build_registry.py` 실행 → `.opencode/skills/sap-bc-usage/registry.json` 갱신 확인,
-   `sap-bc-usage` SKILL.md의 Module catalog + Function usage에 신규모듈 1행 이상 추가 (CLI 예 포함)
+7. 공용 등록(CLI): `python sap_bc.py check` 통과 → `python sap_bc.py skill-sync` 실행 →
+   `registry.json` 갱신 + `sap-bc-usage` SKILL.md 카운트 동기화 확인,
+   Module catalog + Function usage에 신규모듈 행 추가 (예는 `python sap_bc.py usage <새기능ID>` 출력 복붙)
 
 ## Output
 
-- `<out>.py` 파일 1개 (TOOLS + get_tool_defs + call_tool 포함) + 사용법 (`python <out>.py <SYSTEM> <F01|함수명> --params '{...}'`)
-- `tools/build_registry.py` 실행으로 갱신된 `.opencode/skills/sap-bc-usage/registry.json` (커밋 포함)
+- `<out>.py` 파일 1개 (TOOLS + get_tool_defs + call_tool 포함) + 사용법 (`python sap_bc.py call <SYSTEM> <F01|함수명> --params '{...}'`, 구 방식 `python <out>.py ...`도 동일)
+- `python sap_bc.py skill-sync`로 갱신된 `.opencode/skills/sap-bc-usage/registry.json` (커밋 포함)
 - `sap-bc-usage` SKILL.md 사용법 등록 (Module catalog + Function usage 행 추가)
 - 응답 마지막에: 기능ID→함수→인자 대응표 / 구현 범위 / 미지원 항목 / 필요 권한(`S_TABU_NAM`, `S_RFC`, `AUTHORITY-CHECK` 대상) / 테스트 결과
 

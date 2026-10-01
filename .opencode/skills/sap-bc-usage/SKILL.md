@@ -11,8 +11,10 @@ description: 배포된 sap_tcode_*.py 공용 사용법. tcode별 기능 목록�
 본 문서는 사람이 읽는 요약 + 호출 패턴만 담는다.
 
 - 기능 목록 원천: `.opencode/skills/sap-bc-usage/registry.json`
-  (갱신: `python tools/build_registry.py`)
+  (갱신: `python sap_bc.py skill-sync` — 구 방식 `python tools/build_registry.py`도 동일)
 - 분석서 원천: `docs/analysis/<SYS>_<TCODE>.md`
+- 통합 CLI: `sap_bc.py`가 1차 진입점. 모듈이 늘어나도 list/usage/call은 여기만 보면 된다.
+  MCP화는 CLI가 안정된 뒤 얇은 래퍼로 올리는 것으로 미룸 (아래 Design note 참조).
 
 ## When to use me
 
@@ -28,13 +30,25 @@ description: 배포된 sap_tcode_*.py 공용 사용법. tcode별 기능 목록�
 2. 시스템 결정 3순위: 명시 인자(system/conn) > `$SAP_SYSTEM`/`$SAP_DEFAULT_SYSTEM` > 모듈 `SYSTEM` 상수(현재 전부 `A4H`).
 3. 쓰기는 기본 dry-run. `commit=True`(SU01/SU10) 또는 `execute=True`(SM37 F03) 명시 시에만 실제 반영.
 
-## Common call patterns (전 모듈 동일)
+## Common call patterns (통합 CLI 우선)
 
 ```powershell
-# CLI: python <모듈> <SYSTEM> <F01|함수명> --params '{...}'
+# 목록 (SAP 접속 불필요, pyrfc 없이 동작)
+python sap_bc.py list
+python sap_bc.py list --json
+
+# 사용법 (SAP 접속 불필요 — 스키마 + 복붙 예 출력)
+python sap_bc.py usage SU01
+python sap_bc.py usage F07b
+python sap_bc.py usage f01_select_jobs
+
+# 실행 (SAP 접속 필요 — 아래 Prerequisites 충족 시)
+python sap_bc.py call A4H F01 --params '{"username": "DEVELOPER"}'
+python sap_bc.py call A4H f01_select_jobs --params '{"max_rows": 10}'
+
+# 구 방식 (모듈 직접 호출 — 동일 동작, fallback)
 python sap_tcode_su01.py A4H F01 --params '{"username": "DEVELOPER"}'
 python sap_tcode_sm37.py A4H F01 --params '{"max_rows": 10}'
-python sap_tcode_se16n.py A4H F01 --params '{"table": "TSTC", "rowcount": 5}'
 ```
 
 ```python
@@ -162,13 +176,23 @@ F03(`f03_table_sizes`)은 trial에 원천 테이블 없음 → `NotImplementedEr
 3. **`unknown tool`** → id(F01) 또는 name(f01_...) 정확히. 모듈별 ID 체계가 다름(SU01 F07a~d 주의).
 4. **TABLE_WITHOUT_DATA / TABLE_NOT_AVAILABLE** → dynpro·클러스터 테이블은 RFC 미지원이 정상. 스킬 함수 내 에러 메시지의 우회안(F01 헤더, F02 직접 키)을 따를 것.
 
-## Registration (새 프로그램 추가 시 — 파일 관리)
+## Registration (새 프로그램 추가 시 — CLI로 완결)
 
-새 `sap_tcode_<new>.py`를 추가한 에이전트/사용자는 반드시:
+새 `sap_tcode_<new>.py`를 추가한 에이전트/사용자는 반드시 (최초 등록도 동일 절차):
 
 1. `sap-tcode-to-python` 스킬의 생성 규칙(TOOLS + get_tool_defs + call_tool)을 지킬 것.
-2. `python tools/build_registry.py` 실행 → `registry.json` 갱신 (커밋에 포함).
-3. 본 SKILL.md의 Module catalog + Function usage에 1행 이상 추가 (복붙용 CLI 예 포함).
-4. `python -m py_compile sap_tcode_<new>.py` 통과 확인.
+2. `python sap_bc.py check` 통과 (계약 위반 시 등록 불가 — TOOLS 키·func 실존·스키마 검사).
+3. `python sap_bc.py skill-sync` 실행 → `registry.json` 재생성 + 본 SKILL.md 카운트 동기화 (커밋에 포함).
+4. 본 SKILL.md의 Module catalog + Function usage에 신규모듈 행 추가
+   (복붙용 예는 `python sap_bc.py usage <새기능ID>` 출력 그대로 붙이면 됨).
+5. `python -m py_compile sap_tcode_<new>.py sap_bc.py` 통과 확인.
 
 `registry.json`이 진실의 원천(source of truth)이다. 본 문장과 레지스트리가 다르면 레지스트리를 따른다.
+
+## Design note (왜 CLI-first인가 — MCP는 나중)
+
+- 지금 필요한 것(list 뱉기·사용법 뱉기·등록 시 스킬 업데이트·최초 등록)은 전부 파일 작업이라
+  상주 데몬 없이 동작하는 CLI가 적정. MCP는 stdio 생명주기·클라이언트 재시작·도구명 충돌(F01 중복) 비용이 듦.
+- `sap_bc.py`가 단일 진입점으로 굳으면 MCP화는 얇게 끝난다:
+  `call_tool`/`get_tool_defs` 계약이 이미 있으니 FastMCP `add_tool` 래퍼 1파일이면 됨.
+  모듈이 20~30개로 불어나 `list`가 무거워지거나 외부 에이전트 연동이 필요해지면 그때 MCP 래퍼 추가.
